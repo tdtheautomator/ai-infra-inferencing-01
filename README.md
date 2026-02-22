@@ -9,27 +9,27 @@
 ## 📐 Architecture Overview
 
 ```
-                        ┌─────────────────────────────────────────────┐
+                        ┌───────────────────────────────────────────────┐
                         │              Docker Network: demo-net         │
                         │                                               │
-  Your App / curl       │   ┌──────────┐      ┌──────────────────────┐ │
-  ─────────────────────►│──►│ LiteLLM  │─────►│       Ollama         │ │
-        :4000           │   │ Gateway  │      │  (Model Inference)   │ │
-                        │   └────┬─────┘      └──────────────────────┘ │
-                        │        │                    :11434             │
-                        │        │ Cache                                 │
+  Your App / curl       │   ┌──────────┐      ┌──────────────────────┐  │
+  ─────────────────────►│──►│ LiteLLM  │─────►│       Ollama         │  │
+        :4000           │   │ Gateway  │      │  (Model Inference)   │  │
+                        │   └────┬─────┘      └──────────────────────┘  │
+                        │        │                    :11434            │
+                        │        │ Cache                                │
                         │   ┌────▼─────┐                                │
                         │   │  Redis   │◄──── Redis Exporter            │
-                        │   │  Cache   │            :9121                │
+                        │   │  Cache   │            :9121               │
                         │   └──────────┘                                │
                         │        :6379                                  │
                         │                                               │
-                        │   ┌──────────────┐    ┌───────────────────┐  │
-                        │   │  Prometheus  │    │      Grafana       │  │
-                        │   │  (Metrics)   │───►│   (Dashboards)    │  │
-                        │   └──────────────┘    └───────────────────┘  │
+                        │   ┌──────────────┐    ┌───────────────────┐   │
+                        │   │  Prometheus  │    │      Grafana      │   │
+                        │   │  (Metrics)   │───►│   (Dashboards)    │   │
+                        │   └──────────────┘    └───────────────────┘   │
                         │        :9090                :3000             │
-                        └─────────────────────────────────────────────┘
+                        └───────────────────────────────────────────────┘
 ```
 
 | Service | Role | Port |
@@ -92,6 +92,7 @@ OLLAMA_MODELS=C:\models
 > This mounts your local model cache into Ollama so models persist across container restarts.
 
 ### 2. LiteLLM Config (`config/litellm/config.yml`)
+***This step is optional, config file is in the repo.***
 
 ```yaml
 model_list:
@@ -165,7 +166,7 @@ general_settings:
 ```
 
 ### 3. Prometheus Config (`config/prometheus/prometheus.yml`)
-
+***This step is optional, config file is in the repo.***
 ```yaml
 # ==================== Prometheus Configuration for Inference Monitoring ====================
 
@@ -262,6 +263,22 @@ docker exec demo-ollama ollama pull deepseek-r1
 # List available models
 docker exec demo-ollama ollama list
 ```
+
+---
+## 📈 Grafana Dashboards
+
+1. Open Grafana: http://localhost:3000
+2. Login: `admin` / `admin` (change on first login)
+3. Navigate to **Dashboards** to find auto-provisioned dashboards
+
+![Grafana Dashboard](images/grafana-dashboard.png)
+
+### Sample Panels
+
+| ![Overview](images/Overview.png) |![Cache](images/Cache.png) |
+|---|---|
+|![Laatency](images/Latency.png) | ![Request Traffic](images/RequestTraffic.png) |
+| ![Token Usage](images/TokenUsage.png) ||
 
 ---
 
@@ -422,33 +439,7 @@ All targets should show **State: UP**.
 
 ---
 
-## 📈 Grafana Dashboards
 
-1. Open Grafana: http://localhost:3000
-2. Login: `admin` / `admin` (change on first login)
-3. Navigate to **Dashboards** to find auto-provisioned dashboards
-
-### Recommended community dashboards to import
-
-| Dashboard | Grafana ID | Purpose |
-|---|---|---|
-| Redis Exporter | `763` | Redis memory, ops/sec, keyspace |
-| Node Exporter Full | `1860` | Host-level CPU, memory, disk |
-| LiteLLM | Search "LiteLLM" | AI gateway metrics |
-
-To import: **Dashboards → Import → Enter ID → Load**
-
-### Key Metrics to Monitor
-
-| Metric | Source | What it tells you |
-|---|---|---|
-| `redis_commands_total` | Redis Exporter | Cache operations per second |
-| `redis_keyspace_hits_total` | Redis Exporter | Cache hit rate |
-| `litellm_requests_total` | LiteLLM | Total AI requests |
-| `litellm_request_duration_seconds` | LiteLLM | Inference latency |
-| `redis_memory_used_bytes` | Redis Exporter | Cache memory consumption |
-
----
 
 ## 🔧 Common Operations
 
@@ -525,25 +516,6 @@ docker system df -v
 ```
 
 ---
-
-## Grafana Dashboard
-The infrastructure comes with a prebuilt-dashbaard.
-→ Login to http://localhost:3000 using admin\admin
-![Grafana Dashboard](images/grafana-dashboard.png)
-
-### Sample Panels
-
-| ![Overview](images/Overview.png) |![Cache](images/Cache.png) |
-|---|---|
-|![Laatency](images/Latency.png) | ![Request Traffic](images/RequestTraffic.png) |
-| ![Token Usage](images/TokenUsage.png) ||
-
-
-### 
-
-### 
-
-
 
 ## 🐛 Troubleshooting
 
