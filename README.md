@@ -2,6 +2,8 @@
 
 > Local AI inference stack using **Ollama** for model serving, **LiteLLM** as an OpenAI-compatible AI gateway, **Redis** for semantic caching, and **Prometheus + Grafana** for monitoring and observability — all containerized with Docker Compose on Windows 11.
 
+ ***ReadMe is Generated using Claude Code, verify***
+
 ---
 
 ## 📐 Architecture Overview
@@ -54,8 +56,9 @@ ai-infra-inferencing-01/
 │   ├── prometheus/
 │   │   └── prometheus.yml        # Scrape targets for Prometheus
 │   └── grafana/
-│       ├── datasources/          # Auto-provisioned Prometheus datasource
-│       └── dashboards/           # Auto-provisioned dashboard JSON files
+│       ├── dashboard.json         # Grafana Dashboard
+│       └── dashboard.yml          # Grafana Privisioing Config
+│       ├── datasources.yml        # Grafana Datasources
 └── README.md
 ```
 
@@ -71,8 +74,6 @@ Before spinning up the stack, ensure you have the following installed on Windows
 - **Git for Windows** (optional, for cloning)
 - At least **16 GB RAM** recommended (8 GB minimum)
 - At least **20 GB free disk space** for models and container images
-
-> **GPU Acceleration (Optional):** If you have an NVIDIA GPU, install the [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) and add a `deploy` section to the Ollama service in `docker-compose.yaml` to enable GPU passthrough.
 
 ---
 
@@ -222,6 +223,8 @@ docker compose pull
 ```powershell
 docker compose up -d
 ```
+![Docker Compose](images/docker-compose.png)
+
 
 ### Start specific services only
 
@@ -239,28 +242,22 @@ docker compose up -d prometheus grafana redis-exporter
 docker compose ps
 ```
 
-Expected output when healthy:
+![Docker PS](images/docker-ps.png)
 
-```
-NAME                    IMAGE                              STATUS
-demo-redis              redis:7-alpine                     Up (healthy)
-demo-redis-exporter     oliver006/redis_exporter:latest    Up
-demo-ollama             ollama/ollama:latest               Up
-demo-litellm            ghcr.io/berriai/litellm:main-stable  Up
-demo-prometheus         prom/prometheus:latest             Up
-demo-grafana            grafana/grafana:latest             Up
-```
 
 ### Pull a model into Ollama
 
 After the stack is up, pull a model to start inferencing:
 
 ```powershell
-# Pull llama3 (recommended starting model)
-docker exec demo-ollama ollama pull llama3
+# Pull Qwen3 0.6B
+docker exec demo-ollama ollama pull qwen3:0.6b
 
-# Pull mistral (smaller, faster)
-docker exec demo-ollama ollama pull mistral
+# Pull GPT-OSS
+docker exec demo-ollama ollama pull gpt-oss
+
+# Pull DeepSeek-R1
+docker exec demo-ollama ollama pull deepseek-r1
 
 # List available models
 docker exec demo-ollama ollama list
@@ -291,6 +288,8 @@ docker compose stop litellm
 docker stats
 ```
 
+![Docker Stats](images/docker-stats.png)
+
 ### Resource usage for specific containers
 
 ```powershell
@@ -313,7 +312,6 @@ docker stats --format "table {{.Name}}\t{{.CPUPerc}}\t{{.MemUsage}}\t{{.NetIO}}\
 
 ```powershell
 docker inspect demo-redis --format "{{.State.Health.Status}}"
-docker inspect demo-litellm --format "{{.State.Health.Status}}"
 ```
 
 ---
@@ -381,7 +379,7 @@ curl http://localhost:8085/api/tags
 # Run a quick inference via Ollama
 curl http://localhost:8085/api/generate `
   -H "Content-Type: application/json" `
-  -d '{"model": "llama3", "prompt": "Hello, how are you?", "stream": false}'
+  -d '{"model": "qwen3:0.6b", "prompt": "Hello, how are you?", "stream": false}'
 ```
 
 ### Test LiteLLM Gateway (OpenAI-compatible)
@@ -389,12 +387,12 @@ curl http://localhost:8085/api/generate `
 ```powershell
 # List available models
 curl http://localhost:4000/models `
-  -H "Authorization: Bearer sk-your-secret-key"
+  -H "Authorization: Bearer sk-1234"
 
 # Chat completion request
 curl http://localhost:4000/chat/completions `
   -H "Content-Type: application/json" `
-  -H "Authorization: Bearer sk-your-secret-key" `
+  -H "Authorization: Bearer sk-1234" `
   -d '{
     "model": "llama3",
     "messages": [{"role": "user", "content": "Explain Redis caching in one sentence."}]
@@ -527,6 +525,25 @@ docker system df -v
 ```
 
 ---
+
+## Grafana Dashboard
+The infrastructure comes with a prebuilt-dashbaard.
+→ Login to http://localhost:3000 using admin\admin
+![Grafana Dashboard](images/grafana-dashboard.png)
+
+### Sample Panels
+
+| ![Overview](images/Overview.png) |![Cache](images/Cache.png) |
+|---|---|
+|![Laatency](images/Latency.png) | ![Request Traffic](images/RequestTraffic.png) |
+| ![Token Usage](images/TokenUsage.png) ||
+
+
+### 
+
+### 
+
+
 
 ## 🐛 Troubleshooting
 

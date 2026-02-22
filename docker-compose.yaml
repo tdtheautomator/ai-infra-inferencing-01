@@ -132,7 +132,9 @@ services:
       - GF_USERS_ALLOW_SIGN_UP=false
     volumes:
       - grafana_data:/var/lib/grafana
-      - ./config/grafana/:/etc/grafana/provisioning/dashboards/
+      - ./config/grafana/datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml
+      - ./config/grafana/dashboards.yml:/etc/grafana/provisioning/dashboards/dashboards.yml
+      - ./config/grafana/dashboard.json:/var/lib/grafana/dashboards/llm-dashboard.json
     depends_on:
       - prometheus
     networks:
