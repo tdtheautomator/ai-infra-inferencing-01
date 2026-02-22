@@ -1,0 +1,158 @@
+
+services:
+#01 ============ Redis (Cache) ====================
+  redis:
+    image: redis:7-alpine
+    container_name: demo-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    networks:
+      - demo-net
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+#02 ============ Redis Exporter (Metrics) =========
+  redis-exporter:
+    image: oliver006/redis_exporter:latest
+    container_name: demo-redis-exporter
+    environment:
+      - REDIS_ADDR=redis://redis:6379
+    ports:
+      - "9121:9121"
+    networks:
+      - demo-net
+    depends_on:
+      redis:
+        condition: service_healthy
+    logging:
+        driver: "json-file"
+        options:
+          max-size: "10m"
+          max-file: "3"
+
+#03 ============ Ollama (Inference) ===============
+  ollama:
+    image: ollama/ollama:latest
+    container_name: demo-ollama
+    ports:
+      - "8085:11434"
+    environment:
+      - OLLAMA_HOST=0.0.0.0:11434
+    volumes:
+      - ${OLLAMA_MODELS}:/root/.ollama/models
+    networks:
+      - demo-net
+    logging:
+        driver: "json-file"
+        options:
+          max-size: "10m"
+          max-file: "3"
+
+#04 ============ LiteLLM (AI Gateway) =============
+  litellm:
+    image: ghcr.io/berriai/litellm:main-stable 
+    container_name: demo-litellm
+    ports:
+      - "4000:4000"
+    environment:
+      - OLLAMA_URL=http://ollama:11434
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_DB=0
+      - LITELLM_CACHE_TTL=3600
+      - PROMETHEUS_URL=http://prometheus:9090
+      - LITELLM_LOG=DEBUG
+      - LOG_LEVEL=DEBUG
+    volumes:
+      - ./config/litellm/config.yml:/app/config.yml
+    command:
+      [ "--config", "/app/config.yml", "--port", "4000" ]
+    depends_on:
+     redis:
+       condition: service_healthy
+     ollama:
+        condition: service_started
+    networks:
+      - demo-net
+    logging:
+        driver: "json-file"
+        options:
+          max-size: "10m"
+          max-file: "3"
+
+#05 ============ Prometheus (Monitoring) ==========
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: demo-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./config/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    depends_on:
+      redis:
+        condition: service_healthy
+      litellm:
+       condition: service_started
+      redis-exporter:
+       condition: service_started
+    networks:
+      - demo-net
+    logging:
+        driver: "json-file"
+        options:
+          max-size: "10m"
+          max-file: "3"
+
+#06 ============ Grafana (Monitoring Dashboards) ==
+  grafana:
+    image: grafana/grafana:latest
+    container_name: demo-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./config/grafana/:/etc/grafana/provisioning/dashboards/
+    depends_on:
+      - prometheus
+    networks:
+      - demo-net
+    logging:
+        driver: "json-file"
+        options:
+          max-size: "10m"
+          max-file: "3"
+
+
+
+#00 ============ Data Volumes =====================
+volumes:
+  redis_data:
+  prometheus_data:
+  grafana_data:
+
+#00 ============ Networks =========================
+networks:
+  demo-net:
+    driver: bridge
+
