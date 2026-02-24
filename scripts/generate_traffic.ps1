@@ -5,9 +5,9 @@ param(
     [int]   $Rounds       = 3,
     [double]$Delay        = 1.0,
     [string]$ApiKey       = "sk-1234",
-    # [string[]]$Models     = @("qwen3:0.6b")
-    [string[]]$Models   = @("qwen3:0.6b","deepseek-r1","gpt-oss")
+    [string[]]$Models   = @("qwen3:0.6b","deepseek-r1","gpt-oss","gpt-5.2-chat","grok-3-mini","Phi-4")
 )
+
 
 $ErrorActionPreference = "SilentlyContinue"
 $BaseUrl = "http://${LiteLLMHost}:${Port}"
@@ -66,7 +66,7 @@ function Send-LLMRequest {
 
     $Stats.Total++
 
-    $Body = @{
+    $Body1 = @{
         model      = $Model
         messages   = $Messages
         max_tokens = 50
@@ -74,9 +74,22 @@ function Send-LLMRequest {
         think      = $false
     } | ConvertTo-Json -Depth 5
 
+    $Body2 = @{
+        model      = $Model
+        messages   = $Messages
+        max_tokens = 50
+        stream     = $false
+    } | ConvertTo-Json -Depth 5
+
     $StartMs = [int](Get-Date -UFormat %s%3N)  # milliseconds
     $StartTime = Get-Date
-
+    If ($Model -match "gpt-5.2-chat|o3-mini") {
+        $Body = $Body2
+        $ProcessUniquePrompts = $false
+    } else {
+        $Body = $Body1
+        $ProcessUniquePrompts = $true
+    }
     try {
         $Response = Invoke-WebRequest `
             -Uri     "$BaseUrl/v1/chat/completions" `

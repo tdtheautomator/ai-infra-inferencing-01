@@ -4,6 +4,38 @@ model_list:
       model: "ollama/qwen3:0.6b"
       api_base: "http://ollama:11434"
       api_key: "not-needed"
+ 
+  - model_name: "gpt5-nano"
+    litellm_params:
+      model: "azure/gpt-5-nano"
+      api_key: os.environ/AZURE_OPEN_AI_API_KEY
+      api_base: os.environ/AZURE_OPEN_AI_API_BASE
+      api_version: "2024-12-01-preview"
+
+
+  - model_name: "gpt-5.2-chat"
+    litellm_params:
+      model: "azure/gpt-5.2-chat"
+      api_key: os.environ/AZURE_COG_AI_API_KEY
+      api_base: os.environ/AZURE_COG_AI_API_BASE
+      api_version: "2024-12-01-preview"
+
+
+  - model_name: grok-3-mini
+    litellm_params:
+      model: azure/grok-3-mini
+      api_key: os.environ/AZURE_AI_API_KEY
+      api_base: os.environ/AZURE_AI_API_BASE
+      api_version: "2024-05-01-preview"
+
+
+  - model_name: "Phi-4"
+    litellm_params:
+      model: "azure/Phi-4-reasoning"
+      api_key: os.environ/AZURE_AI_API_KEY
+      api_base: os.environ/AZURE_AI_API_BASE
+      api_version: "2024-05-01-preview"
+
 
   - model_name: "qwen3-embedding:0.6b"
     litellm_params:
